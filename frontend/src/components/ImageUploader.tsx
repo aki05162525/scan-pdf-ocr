@@ -63,13 +63,12 @@ export default function ImageUploader({ onFilesAdded, currentCount }: Props) {
     e.preventDefault();
   }, []);
 
+  const openFileDialog = useCallback(() => {
+    inputRef.current?.click();
+  }, []);
+
   return (
-    <div
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onClick={() => inputRef.current?.click()}
-      className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
-    >
+    <>
       <input
         ref={inputRef}
         type="file"
@@ -78,14 +77,25 @@ export default function ImageUploader({ onFilesAdded, currentCount }: Props) {
         onChange={(e) => validateAndAdd(e.target.files)}
         className="hidden"
       />
-      <p className="text-lg text-gray-600">ここに画像をドラッグ&ドロップ</p>
-      <p className="text-sm text-gray-400 mt-2">
-        またはクリックしてファイルを選択
-      </p>
-      <p className="text-xs text-gray-400 mt-1">
-        JPG / PNG / 1ファイル{MAX_FILE_SIZE_MB}MBまで / 最大{MAX_PAGE_COUNT}
-        ページ
-      </p>
-    </div>
+      <button
+        type="button"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onClick={openFileDialog}
+        aria-label="ファイルをアップロード"
+        className="block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
+      >
+        <span className="block text-lg text-gray-600">
+          ここに画像をドラッグ&ドロップ
+        </span>
+        <span className="block text-sm text-gray-400 mt-2">
+          またはクリックしてファイルを選択
+        </span>
+        <span className="block text-xs text-gray-400 mt-1">
+          JPG / PNG / 1ファイル{MAX_FILE_SIZE_MB}MBまで / 最大{MAX_PAGE_COUNT}
+          ページ
+        </span>
+      </button>
+    </>
   );
 }

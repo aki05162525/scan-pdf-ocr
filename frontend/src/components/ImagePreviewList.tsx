@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 interface Props {
   files: File[];
@@ -15,11 +16,23 @@ export default function ImagePreviewList({
 }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [urls, setUrls] = useState<string[]>([]);
+  const idMap = useRef(new WeakMap<File, string>());
+
+  const getFileId = (file: File): string => {
+    let id = idMap.current.get(file);
+    if (!id) {
+      id = crypto.randomUUID();
+      idMap.current.set(file, id);
+    }
+    return id;
+  };
 
   useEffect(() => {
     const newUrls = files.map((f) => URL.createObjectURL(f));
     setUrls(newUrls);
-    return () => newUrls.forEach((u) => URL.revokeObjectURL(u));
+    return () => {
+      for (const u of newUrls) URL.revokeObjectURL(u);
+    };
   }, [files]);
 
   const handleDragStart = (index: number) => {
@@ -48,24 +61,28 @@ export default function ImagePreviewList({
       <h3 className="text-sm font-medium text-gray-700 mb-3">
         アップロード画像 ({files.length}ページ) - ドラッグで並び替え
       </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 list-none p-0">
         {files.map((file, index) => (
-          <div
-            key={`${file.name}-${index}`}
+          <li
+            key={getFileId(file)}
             draggable
             onDragStart={() => handleDragStart(index)}
             onDragOver={(e) => handleDragOver(e, index)}
             onDragEnd={handleDragEnd}
+            aria-label={`ページ ${index + 1}: ${file.name}`}
             className={`relative border rounded-lg overflow-hidden cursor-move ${
               dragIndex === index ? "opacity-50" : ""
             }`}
           >
-            <div className="aspect-[3/4] bg-gray-100">
+            <div className="relative aspect-[3/4] bg-gray-100">
               {urls[index] && (
-                <img
+                <Image
                   src={urls[index]}
                   alt={`ページ ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                  unoptimized
+                  className="object-cover"
                 />
               )}
             </div>
@@ -82,9 +99,9 @@ export default function ImagePreviewList({
             <div className="text-xs text-gray-500 p-1 truncate">
               {file.name}
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
