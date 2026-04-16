@@ -47,9 +47,7 @@
       "indexes": {
         "idx_job_pages_job_id": {
           "name": "idx_job_pages_job_id",
-          "columns": [
-            "job_id"
-          ],
+          "columns": ["job_id"],
           "isUnique": false
         }
       },
@@ -58,12 +56,8 @@
           "name": "job_pages_job_id_jobs_id_fk",
           "tableFrom": "job_pages",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

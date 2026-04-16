@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { use } from "react";
-import { getJob } from "@/lib/api";
-import type { Job } from "@/lib/api";
-import JobStatus from "@/components/JobStatus";
+import { use, useEffect, useState } from "react";
 import JobResult from "@/components/JobResult";
+import JobStatus from "@/components/JobStatus";
+import type { Job } from "@/lib/api";
+import { getJob } from "@/lib/api";
 
-export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
+export default function JobPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +25,9 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
         setJob(data);
 
         // Continue polling if still processing
-        if (["uploaded", "pdf_generated", "ocr_running"].includes(data.status)) {
+        if (
+          ["uploaded", "pdf_generated", "ocr_running"].includes(data.status)
+        ) {
           setTimeout(poll, 2000);
         }
       } catch {
@@ -40,7 +45,9 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
     return (
       <main className="flex-1">
         <div className="max-w-2xl mx-auto px-4 py-8">
-          <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">{error}</div>
+          <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">
+            {error}
+          </div>
         </div>
       </main>
     );

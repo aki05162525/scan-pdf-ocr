@@ -1,9 +1,9 @@
 "use client";
 
-import type { Job } from "@/lib/api";
-import { getOcrPdfUrl, getOriginalPdfUrl, deleteJob } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { Job } from "@/lib/api";
+import { deleteJob, getOcrPdfUrl, getOriginalPdfUrl } from "@/lib/api";
 
 interface Props {
   job: Job;
@@ -14,7 +14,10 @@ export default function JobResult({ job }: Props) {
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm("このジョブを削除しますか？関連ファイルもすべて削除されます。")) return;
+    if (
+      !confirm("このジョブを削除しますか？関連ファイルもすべて削除されます。")
+    )
+      return;
     setDeleting(true);
     try {
       await deleteJob(job.id);

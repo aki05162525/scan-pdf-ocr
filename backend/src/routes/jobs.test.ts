@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the services before importing routes
 vi.mock("../services/job.service.js", () => ({
@@ -119,7 +119,10 @@ describe("POST /api/jobs", () => {
     const formData = new FormData();
     formData.append("images", new File(["a"], "a.jpg", { type: "image/jpeg" }));
     formData.append("images", new File(["b"], "b.png", { type: "image/png" }));
-    formData.append("images", new File(["c"], "c.jpeg", { type: "image/jpeg" }));
+    formData.append(
+      "images",
+      new File(["c"], "c.jpeg", { type: "image/jpeg" }),
+    );
     formData.append("language", "jpn+eng");
 
     const res = await app.request("/api/jobs", {

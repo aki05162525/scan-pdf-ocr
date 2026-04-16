@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listJobs, deleteJob, getOcrPdfUrl } from "@/lib/api";
+import { useEffect, useState } from "react";
 import type { Job } from "@/lib/api";
+import { deleteJob, getOcrPdfUrl, listJobs } from "@/lib/api";
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   uploaded: { label: "処理待ち", color: "bg-gray-100 text-gray-700" },
@@ -36,7 +36,7 @@ export default function JobHistoryTable() {
 
   useEffect(() => {
     fetchJobs();
-  }, [page]);
+  }, [fetchJobs]);
 
   const handleDelete = async (e: React.MouseEvent, jobId: string) => {
     e.stopPropagation();
@@ -74,7 +74,10 @@ export default function JobHistoryTable() {
           </thead>
           <tbody>
             {jobs.map((job) => {
-              const badge = STATUS_BADGE[job.status] ?? { label: job.status, color: "bg-gray-100" };
+              const badge = STATUS_BADGE[job.status] ?? {
+                label: job.status,
+                color: "bg-gray-100",
+              };
               return (
                 <tr
                   key={job.id}
@@ -89,7 +92,9 @@ export default function JobHistoryTable() {
                     {job.language === "jpn" ? "日本語" : "日本語+英語"}
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
+                    >
                       {badge.label}
                     </span>
                   </td>

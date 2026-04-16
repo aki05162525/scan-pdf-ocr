@@ -1,17 +1,15 @@
-import { eq, desc, sql, count } from "drizzle-orm";
-import { createId } from "@paralleldrive/cuid2";
-import { db } from "../db/index.js";
-import { jobs, jobPages } from "../db/schema.js";
-import type { Job } from "../db/schema.js";
-import {
-  ensureJobDirs,
-  deleteJobFiles,
-  getPagesDir,
-  getOriginalPdfPath,
-  getOcrPdfPath,
-} from "../utils/storage.js";
 import { writeFile } from "node:fs/promises";
-import { join, extname } from "node:path";
+import { extname, join } from "node:path";
+import { createId } from "@paralleldrive/cuid2";
+import { count, desc, eq, sql } from "drizzle-orm";
+import { db } from "../db/index.js";
+import type { Job } from "../db/schema.js";
+import { jobPages, jobs } from "../db/schema.js";
+import {
+  deleteJobFiles,
+  ensureJobDirs,
+  getPagesDir,
+} from "../utils/storage.js";
 
 export interface CreateJobInput {
   images: File[];
@@ -117,7 +115,11 @@ export async function deleteJob(jobId: string) {
 export function updateJobStatus(
   jobId: string,
   status: string,
-  extra?: Partial<{ originalPdfPath: string; ocrPdfPath: string; errorMessage: string }>
+  extra?: Partial<{
+    originalPdfPath: string;
+    ocrPdfPath: string;
+    errorMessage: string;
+  }>,
 ) {
   db.update(jobs)
     .set({

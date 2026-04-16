@@ -1,24 +1,24 @@
-import { Hono } from "hono";
 import { createReadStream } from "node:fs";
 import { access } from "node:fs/promises";
+import { Readable } from "node:stream";
+import { Hono } from "hono";
 import { stream } from "hono/streaming";
 import {
   createJob,
+  deleteJob,
   getJob,
   listJobs,
-  deleteJob,
 } from "../services/job.service.js";
 import { processJob } from "../services/ocr.service.js";
+import { logger } from "../utils/logger.js";
 import {
+  ALLOWED_EXTENSIONS,
   createJobSchema,
   listJobsSchema,
-  ALLOWED_EXTENSIONS,
   MAX_FILE_SIZE,
-  MAX_TOTAL_SIZE,
   MAX_PAGE_COUNT,
+  MAX_TOTAL_SIZE,
 } from "../validators/job.validator.js";
-import { logger } from "../utils/logger.js";
-import { Readable } from "node:stream";
 
 const app = new Hono();
 
@@ -42,11 +42,13 @@ app.post("/", async (c) => {
   // Validate each file
   let totalSize = 0;
   for (const image of images) {
-    const ext = "." + image.name.split(".").pop()?.toLowerCase();
+    const ext = `.${image.name.split(".").pop()?.toLowerCase()}`;
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
       return c.json(
-        { error: `Unsupported file type: ${ext}. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}` },
-        400
+        {
+          error: `Unsupported file type: ${ext}. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`,
+        },
+        400,
       );
     }
     if (image.size > MAX_FILE_SIZE) {
@@ -64,7 +66,10 @@ app.post("/", async (c) => {
     pageOrder: pageOrder ?? undefined,
   });
   if (!parsed.success) {
-    return c.json({ error: "Invalid parameters", details: parsed.error.issues }, 400);
+    return c.json(
+      { error: "Invalid parameters", details: parsed.error.issues },
+      400,
+    );
   }
 
   const job = await createJob({
@@ -107,7 +112,7 @@ app.get("/:id", async (c) => {
 // GET /api/jobs/:id/files/ocr-pdf - Download OCR PDF
 app.get("/:id/files/ocr-pdf", async (c) => {
   const job = await getJob(c.req.param("id"));
-  if (!job || !job.hasOcrPdf) {
+  if (!job?.hasOcrPdf) {
     return c.json({ error: "OCR PDF not found" }, 404);
   }
 
@@ -120,9 +125,13 @@ app.get("/:id/files/ocr-pdf", async (c) => {
     return c.json({ error: "File not found" }, 404);
   }
 
-  const date = job.createdAt.split("T")[0] ?? new Date().toISOString().split("T")[0];
+  const date =
+    job.createdAt.split("T")[0] ?? new Date().toISOString().split("T")[0];
   c.header("Content-Type", "application/pdf");
-  c.header("Content-Disposition", `attachment; filename="scan_${date}_ocr.pdf"`);
+  c.header(
+    "Content-Disposition",
+    `attachment; filename="scan_${date}_ocr.pdf"`,
+  );
 
   return stream(c, async (s) => {
     const nodeStream = createReadStream(filePath);
@@ -142,7 +151,7 @@ app.get("/:id/files/ocr-pdf", async (c) => {
 // GET /api/jobs/:id/files/original-pdf - Download original PDF
 app.get("/:id/files/original-pdf", async (c) => {
   const job = await getJob(c.req.param("id"));
-  if (!job || !job.hasOriginalPdf) {
+  if (!job?.hasOriginalPdf) {
     return c.json({ error: "Original PDF not found" }, 404);
   }
 
@@ -155,9 +164,13 @@ app.get("/:id/files/original-pdf", async (c) => {
     return c.json({ error: "File not found" }, 404);
   }
 
-  const date = job.createdAt.split("T")[0] ?? new Date().toISOString().split("T")[0];
+  const date =
+    job.createdAt.split("T")[0] ?? new Date().toISOString().split("T")[0];
   c.header("Content-Type", "application/pdf");
-  c.header("Content-Disposition", `attachment; filename="scan_${date}_original.pdf"`);
+  c.header(
+    "Content-Disposition",
+    `attachment; filename="scan_${date}_original.pdf"`,
+  );
 
   return stream(c, async (s) => {
     const nodeStream = createReadStream(filePath);

@@ -22,7 +22,7 @@ export interface JobListResponse {
 export async function createJob(
   images: File[],
   language: string,
-  pageOrder?: number[]
+  pageOrder?: number[],
 ): Promise<Job> {
   const formData = new FormData();
   for (const image of images) {

@@ -1,13 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { execFile, execFileSync } from "node:child_process";
-import { mkdir, rm, access } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { access, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
-import {
-  getPagesDir,
-  getJobDir,
-  getOriginalPdfPath,
-  getOcrPdfPath,
-} from "../utils/storage.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getJobDir, getOcrPdfPath, getPagesDir } from "../utils/storage.js";
 
 function getPdfPageCount(pdfPath: string): number {
   const output = execFileSync("pdfinfo", [pdfPath]).toString();
@@ -84,7 +79,7 @@ describe("runOcr", () => {
         ocrPdfPath: ocrPath,
       });
     },
-    30_000
+    30_000,
   );
 
   it.skipIf(!isOcrmypdfInstalled())(
@@ -99,7 +94,7 @@ describe("runOcr", () => {
       const ocrPath = getOcrPdfPath(TEST_JOB_ID);
       await expect(access(ocrPath)).resolves.toBeUndefined();
     },
-    30_000
+    30_000,
   );
 
   it.skipIf(!isOcrmypdfInstalled())(
@@ -112,9 +107,9 @@ describe("runOcr", () => {
       expect(updateJobStatus).toHaveBeenCalledWith(
         TEST_JOB_ID,
         "failed",
-        expect.objectContaining({ errorMessage: expect.any(String) })
+        expect.objectContaining({ errorMessage: expect.any(String) }),
       );
-    }
+    },
   );
 });
 
@@ -127,7 +122,7 @@ describe("tessdata_best", () => {
     // Project tessdata dir is backend/tessdata
     const projectTessdata = path.resolve(
       path.dirname(new URL(import.meta.url).pathname),
-      "../../tessdata"
+      "../../tessdata",
     );
 
     if (fs.existsSync(projectTessdata)) {
@@ -149,8 +144,8 @@ describe("ocrmypdf options", () => {
       // Spy on execFile to capture the actual arguments
       const { execFile: realExecFile } = await import("node:child_process");
       const { promisify } = await import("node:util");
-      const calls: string[][] = [];
-      const origExecFile = realExecFile;
+      const _calls: string[][] = [];
+      const _origExecFile = realExecFile;
 
       // Run OCR and check it succeeds with the new options
       await runOcr(TEST_JOB_ID, "eng");
@@ -162,7 +157,7 @@ describe("ocrmypdf options", () => {
       const text = execFileSync("pdftotext", [ocrPath, "-"]).toString();
       expect(text.toLowerCase()).toContain("quality");
     },
-    30_000
+    30_000,
   );
 });
 
@@ -189,6 +184,6 @@ describe("full pipeline (PDF generation + OCR)", () => {
       // Verify page count of OCR PDF
       expect(getPdfPageCount(ocrPath)).toBe(2);
     },
-    60_000
+    60_000,
   );
 });

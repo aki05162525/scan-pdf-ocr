@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import JobStatus from "./JobStatus";
+import { describe, expect, it } from "vitest";
 import type { Job } from "@/lib/api";
+import JobStatus from "./JobStatus";
 
 function createJob(overrides: Partial<Job> = {}): Job {
   return {
@@ -38,7 +38,7 @@ describe("JobStatus", () => {
     render(
       <JobStatus
         job={createJob({ status: "failed", errorMessage: "OCR engine error" })}
-      />
+      />,
     );
     expect(screen.getByText("失敗")).toBeInTheDocument();
     expect(screen.getByText("OCR engine error")).toBeInTheDocument();

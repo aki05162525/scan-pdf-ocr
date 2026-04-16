@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB, MAX_PAGE_COUNT } from "./constants";
+import {
+  ALLOWED_EXTENSIONS,
+  MAX_FILE_SIZE_MB,
+  MAX_PAGE_COUNT,
+} from "./constants";
 
 interface Props {
   onFilesAdded: (files: File[]) => void;
@@ -19,7 +23,7 @@ export default function ImageUploader({ onFilesAdded, currentCount }: Props) {
       const errors: string[] = [];
 
       for (const file of files) {
-        const ext = "." + file.name.split(".").pop()?.toLowerCase();
+        const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
         if (!ALLOWED_EXTENSIONS.includes(ext)) {
           errors.push(`${file.name}: 非対応の形式です`);
           continue;
@@ -44,7 +48,7 @@ export default function ImageUploader({ onFilesAdded, currentCount }: Props) {
         onFilesAdded(valid);
       }
     },
-    [onFilesAdded, currentCount]
+    [onFilesAdded, currentCount],
   );
 
   const handleDrop = useCallback(
@@ -52,7 +56,7 @@ export default function ImageUploader({ onFilesAdded, currentCount }: Props) {
       e.preventDefault();
       validateAndAdd(e.dataTransfer.files);
     },
-    [validateAndAdd]
+    [validateAndAdd],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -74,14 +78,13 @@ export default function ImageUploader({ onFilesAdded, currentCount }: Props) {
         onChange={(e) => validateAndAdd(e.target.files)}
         className="hidden"
       />
-      <p className="text-lg text-gray-600">
-        ここに画像をドラッグ&ドロップ
-      </p>
+      <p className="text-lg text-gray-600">ここに画像をドラッグ&ドロップ</p>
       <p className="text-sm text-gray-400 mt-2">
         またはクリックしてファイルを選択
       </p>
       <p className="text-xs text-gray-400 mt-1">
-        JPG / PNG / 1ファイル{MAX_FILE_SIZE_MB}MBまで / 最大{MAX_PAGE_COUNT}ページ
+        JPG / PNG / 1ファイル{MAX_FILE_SIZE_MB}MBまで / 最大{MAX_PAGE_COUNT}
+        ページ
       </p>
     </div>
   );

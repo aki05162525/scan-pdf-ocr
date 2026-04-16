@@ -1,12 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  languageSchema,
-  createJobSchema,
-  listJobsSchema,
   ALLOWED_EXTENSIONS,
+  createJobSchema,
+  languageSchema,
+  listJobsSchema,
   MAX_FILE_SIZE,
-  MAX_TOTAL_SIZE,
   MAX_PAGE_COUNT,
+  MAX_TOTAL_SIZE,
 } from "./job.validator.js";
 
 describe("languageSchema", () => {

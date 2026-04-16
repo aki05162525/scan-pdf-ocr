@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Props {
   files: File[];
@@ -8,7 +8,11 @@ interface Props {
   onRemove: (index: number) => void;
 }
 
-export default function ImagePreviewList({ files, onReorder, onRemove }: Props) {
+export default function ImagePreviewList({
+  files,
+  onReorder,
+  onRemove,
+}: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [urls, setUrls] = useState<string[]>([]);
 
@@ -74,7 +78,9 @@ export default function ImagePreviewList({ files, onReorder, onRemove }: Props) 
             >
               x
             </button>
-            <div className="text-xs text-gray-500 p-1 truncate">{file.name}</div>
+            <div className="text-xs text-gray-500 p-1 truncate">
+              {file.name}
+            </div>
           </div>
         ))}
       </div>

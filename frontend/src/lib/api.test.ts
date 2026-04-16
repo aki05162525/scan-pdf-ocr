@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createJob,
-  getJob,
-  listJobs,
   deleteJob,
+  getJob,
   getOcrPdfUrl,
   getOriginalPdfUrl,
+  listJobs,
 } from "./api";
 
 const mockFetch = vi.fn();
@@ -71,7 +71,9 @@ describe("getJob", () => {
 
     const result = await getJob("abc");
     expect(result).toEqual(mockJob);
-    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("/jobs/abc"));
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/jobs/abc"),
+    );
   });
 
   it("throws on 404", async () => {
@@ -89,7 +91,7 @@ describe("listJobs", () => {
 
     await listJobs();
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("page=1&limit=20")
+      expect.stringContaining("page=1&limit=20"),
     );
   });
 
@@ -101,7 +103,7 @@ describe("listJobs", () => {
 
     await listJobs(3, 10);
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("page=3&limit=10")
+      expect.stringContaining("page=3&limit=10"),
     );
   });
 });

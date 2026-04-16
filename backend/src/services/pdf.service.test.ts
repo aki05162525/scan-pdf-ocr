@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdir, rm, readdir, access } from "node:fs/promises";
+import { access, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  getJobDir,
+  getOriginalPdfPath,
+  getPagesDir,
+} from "../utils/storage.js";
 import { generatePdf } from "./pdf.service.js";
-import { getPagesDir, getOriginalPdfPath, getJobDir } from "../utils/storage.js";
 
 function getPdfInfo(pdfPath: string): { pages: number; pageSize: string } {
   const output = execFileSync("pdfinfo", [pdfPath]).toString();
@@ -67,7 +71,7 @@ describe("generatePdf", () => {
 
   it("throws when no images exist", async () => {
     await expect(generatePdf(TEST_JOB_ID)).rejects.toThrow(
-      "No image files found"
+      "No image files found",
     );
   });
 
@@ -80,7 +84,9 @@ describe("generatePdf", () => {
 
     // B5 = 176mm x 250mm = 498.9 x 708.66 pts
     // pdfinfo rounds, so check approximate values
-    const [width, height] = info.pageSize.split(" x ").map((s) => parseFloat(s));
+    const [width, height] = info.pageSize
+      .split(" x ")
+      .map((s) => parseFloat(s));
     expect(width).toBeCloseTo(498.9, 0);
     expect(height).toBeCloseTo(708.66, 0);
   });
@@ -89,8 +95,14 @@ describe("generatePdf", () => {
     const pagesDir = getPagesDir(TEST_JOB_ID);
     // Create a wide landscape image (800x400)
     execFileSync("convert", [
-      "-size", "800x400", "xc:white",
-      "-pointsize", "24", "-annotate", "+50+200", "Landscape",
+      "-size",
+      "800x400",
+      "xc:white",
+      "-pointsize",
+      "24",
+      "-annotate",
+      "+50+200",
+      "Landscape",
       join(pagesDir, "000.jpg"),
     ]);
 
@@ -98,7 +110,9 @@ describe("generatePdf", () => {
     const info = getPdfInfo(outputPath);
 
     // Page should still be B5 portrait, not the image's aspect ratio
-    const [width, height] = info.pageSize.split(" x ").map((s) => parseFloat(s));
+    const [width, height] = info.pageSize
+      .split(" x ")
+      .map((s) => parseFloat(s));
     expect(width).toBeCloseTo(498.9, 0);
     expect(height).toBeCloseTo(708.66, 0);
   });
@@ -107,15 +121,23 @@ describe("generatePdf", () => {
     const pagesDir = getPagesDir(TEST_JOB_ID);
     // Create a tall portrait image (400x800)
     execFileSync("convert", [
-      "-size", "400x800", "xc:white",
-      "-pointsize", "24", "-annotate", "+50+400", "Portrait",
+      "-size",
+      "400x800",
+      "xc:white",
+      "-pointsize",
+      "24",
+      "-annotate",
+      "+50+400",
+      "Portrait",
       join(pagesDir, "000.jpg"),
     ]);
 
     const outputPath = await generatePdf(TEST_JOB_ID);
     const info = getPdfInfo(outputPath);
 
-    const [width, height] = info.pageSize.split(" x ").map((s) => parseFloat(s));
+    const [width, height] = info.pageSize
+      .split(" x ")
+      .map((s) => parseFloat(s));
     expect(width).toBeCloseTo(498.9, 0);
     expect(height).toBeCloseTo(708.66, 0);
   });
@@ -126,15 +148,19 @@ describe("generatePdf", () => {
 
     // Create a normal image, then set EXIF orientation to 90° CW (orientation 6)
     execFileSync("convert", [
-      "-size", "400x600", "xc:white",
-      "-pointsize", "30", "-annotate", "+50+300", "Rotated EXIF",
+      "-size",
+      "400x600",
+      "xc:white",
+      "-pointsize",
+      "30",
+      "-annotate",
+      "+50+300",
+      "Rotated EXIF",
       imgPath,
     ]);
     // Simulate phone held sideways: rotate pixels 90° but keep same dimensions
     // This mimics a phone photo with EXIF rotation tag
-    execFileSync("convert", [
-      imgPath, "-rotate", "90", imgPath,
-    ]);
+    execFileSync("convert", [imgPath, "-rotate", "90", imgPath]);
 
     const outputPath = await generatePdf(TEST_JOB_ID);
 
@@ -142,9 +168,12 @@ describe("generatePdf", () => {
     // (text should be readable, not sideways)
     const extractedPath = join(pagesDir, "_extracted.png");
     execFileSync("convert", [
-      "-density", "150", `${outputPath}[0]`, extractedPath,
+      "-density",
+      "150",
+      `${outputPath}[0]`,
+      extractedPath,
     ]);
-    const info = execFileSync("identify", [extractedPath]).toString();
+    const _info = execFileSync("identify", [extractedPath]).toString();
     // The extracted image should fit in B5 portrait canvas
     await expect(access(outputPath)).resolves.toBeUndefined();
   });
@@ -155,10 +184,18 @@ describe("generatePdf", () => {
 
     // Create an image with text, then rotate slightly to simulate skew
     execFileSync("convert", [
-      "-size", "600x400", "xc:white",
-      "-pointsize", "24", "-annotate", "+50+200", "Skewed Text Line",
-      "-rotate", "5",          // 5 degree skew
-      "-background", "white",
+      "-size",
+      "600x400",
+      "xc:white",
+      "-pointsize",
+      "24",
+      "-annotate",
+      "+50+200",
+      "Skewed Text Line",
+      "-rotate",
+      "5", // 5 degree skew
+      "-background",
+      "white",
       imgPath,
     ]);
 
@@ -167,9 +204,7 @@ describe("generatePdf", () => {
 
     // OCR should be able to read the corrected text
     const ocrPath = join(pagesDir, "_ocr_test.pdf");
-    execFileSync("ocrmypdf", [
-      "-l", "eng", "--force-ocr", outputPath, ocrPath,
-    ]);
+    execFileSync("ocrmypdf", ["-l", "eng", "--force-ocr", outputPath, ocrPath]);
     const text = execFileSync("pdftotext", [ocrPath, "-"]).toString();
     expect(text.toLowerCase()).toContain("skewed");
   }, 30_000);
@@ -181,23 +216,32 @@ describe("generatePdf", () => {
     // Simulate scanner shading: strong dark-to-light gradient background
     // with black text that becomes hard to read in the dark region.
     execFileSync("convert", [
-      "-size", "1200x800",
+      "-size",
+      "1200x800",
       "gradient:gray35-white",
-      "-fill", "black",
-      "-pointsize", "48",
-      "-annotate", "+80+200", "Shading correction",
-      "-annotate", "+80+400", "should still be readable",
-      "-annotate", "+80+600", "across the gradient",
+      "-fill",
+      "black",
+      "-pointsize",
+      "48",
+      "-annotate",
+      "+80+200",
+      "Shading correction",
+      "-annotate",
+      "+80+400",
+      "should still be readable",
+      "-annotate",
+      "+80+600",
+      "across the gradient",
       imgPath,
     ]);
 
     const outputPath = await generatePdf(TEST_JOB_ID);
 
     const ocrPath = join(pagesDir, "_ocr_test.pdf");
-    execFileSync("ocrmypdf", [
-      "-l", "eng", "--force-ocr", outputPath, ocrPath,
-    ]);
-    const text = execFileSync("pdftotext", [ocrPath, "-"]).toString().toLowerCase();
+    execFileSync("ocrmypdf", ["-l", "eng", "--force-ocr", outputPath, ocrPath]);
+    const text = execFileSync("pdftotext", [ocrPath, "-"])
+      .toString()
+      .toLowerCase();
     // Text in the dark (shaded) region should still be picked up
     expect(text).toContain("shading");
     expect(text).toContain("readable");

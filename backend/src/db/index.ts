@@ -1,8 +1,8 @@
+import { mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema.js";
-import { mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
 
 const DB_PATH = "./storage/app.db";
 

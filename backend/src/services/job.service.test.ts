@@ -1,13 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { eq } from "drizzle-orm";
-import * as schema from "../db/schema.js";
-import { jobs, jobPages } from "../db/schema.js";
 import { createId } from "@paralleldrive/cuid2";
-import { mkdir, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import Database from "better-sqlite3";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import * as schema from "../db/schema.js";
+import { jobPages, jobs } from "../db/schema.js";
 
 // We'll test the service logic by directly operating on an in-memory DB
 // and verifying the DB state, since the service functions use the singleton db.
@@ -58,12 +55,12 @@ describe("jobs table operations", () => {
 
     const job = db.select().from(jobs).where(eq(jobs.id, id)).get();
     expect(job).toBeDefined();
-    expect(job!.status).toBe("uploaded");
-    expect(job!.language).toBe("jpn");
-    expect(job!.pageCount).toBe(3);
-    expect(job!.originalPdfPath).toBeNull();
-    expect(job!.ocrPdfPath).toBeNull();
-    expect(job!.errorMessage).toBeNull();
+    expect(job?.status).toBe("uploaded");
+    expect(job?.language).toBe("jpn");
+    expect(job?.pageCount).toBe(3);
+    expect(job?.originalPdfPath).toBeNull();
+    expect(job?.ocrPdfPath).toBeNull();
+    expect(job?.errorMessage).toBeNull();
   });
 
   it("updates job status", () => {
@@ -73,7 +70,7 @@ describe("jobs table operations", () => {
     db.update(jobs).set({ status: "ocr_running" }).where(eq(jobs.id, id)).run();
 
     const job = db.select().from(jobs).where(eq(jobs.id, id)).get();
-    expect(job!.status).toBe("ocr_running");
+    expect(job?.status).toBe("ocr_running");
   });
 
   it("updates job to completed with pdf paths", () => {
@@ -90,9 +87,9 @@ describe("jobs table operations", () => {
       .run();
 
     const job = db.select().from(jobs).where(eq(jobs.id, id)).get();
-    expect(job!.status).toBe("completed");
-    expect(job!.originalPdfPath).toBe("/path/original.pdf");
-    expect(job!.ocrPdfPath).toBe("/path/ocr.pdf");
+    expect(job?.status).toBe("completed");
+    expect(job?.originalPdfPath).toBe("/path/original.pdf");
+    expect(job?.ocrPdfPath).toBe("/path/ocr.pdf");
   });
 
   it("updates job to failed with error message", () => {
@@ -105,8 +102,8 @@ describe("jobs table operations", () => {
       .run();
 
     const job = db.select().from(jobs).where(eq(jobs.id, id)).get();
-    expect(job!.status).toBe("failed");
-    expect(job!.errorMessage).toBe("OCR engine crashed");
+    expect(job?.status).toBe("failed");
+    expect(job?.errorMessage).toBe("OCR engine crashed");
   });
 
   it("deletes a job", () => {
@@ -123,18 +120,10 @@ describe("jobs table operations", () => {
     const id1 = createId();
     const id2 = createId();
 
-    db.insert(jobs)
-      .values({ id: id1, createdAt: "2026-01-01T00:00:00" })
-      .run();
-    db.insert(jobs)
-      .values({ id: id2, createdAt: "2026-01-02T00:00:00" })
-      .run();
+    db.insert(jobs).values({ id: id1, createdAt: "2026-01-01T00:00:00" }).run();
+    db.insert(jobs).values({ id: id2, createdAt: "2026-01-02T00:00:00" }).run();
 
-    const allJobs = db
-      .select()
-      .from(jobs)
-      .orderBy(schema.jobs.createdAt)
-      .all();
+    const allJobs = db.select().from(jobs).orderBy(schema.jobs.createdAt).all();
 
     expect(allJobs).toHaveLength(2);
     expect(allJobs[0].id).toBe(id1);
@@ -214,13 +203,11 @@ describe("storage utility functions", async () => {
 
   it("returns correct original pdf path", () => {
     expect(getOriginalPdfPath("abc123")).toMatch(
-      /storage\/jobs\/abc123\/original\.pdf$/
+      /storage\/jobs\/abc123\/original\.pdf$/,
     );
   });
 
   it("returns correct ocr pdf path", () => {
-    expect(getOcrPdfPath("abc123")).toMatch(
-      /storage\/jobs\/abc123\/ocr\.pdf$/
-    );
+    expect(getOcrPdfPath("abc123")).toMatch(/storage\/jobs\/abc123\/ocr\.pdf$/);
   });
 });

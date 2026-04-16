@@ -1,10 +1,10 @@
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getOriginalPdfPath, getOcrPdfPath } from "../utils/storage.js";
+import { promisify } from "node:util";
 import { logger } from "../utils/logger.js";
+import { getOcrPdfPath, getOriginalPdfPath } from "../utils/storage.js";
 import { updateJobStatus } from "./job.service.js";
 
 const execFileAsync = promisify(execFile);
@@ -52,7 +52,7 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
         inputPath,
         outputPath,
       ],
-      { env }
+      { env },
     );
 
     updateJobStatus(jobId, "completed", { ocrPdfPath: outputPath });
@@ -68,7 +68,7 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
 
 export async function processJob(
   jobId: string,
-  language: string
+  language: string,
 ): Promise<void> {
   try {
     // Step 1: Generate PDF from images
@@ -79,8 +79,7 @@ export async function processJob(
     // Step 2: Run OCR
     await runOcr(jobId, language);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown error";
+    const message = error instanceof Error ? error.message : "Unknown error";
     updateJobStatus(jobId, "failed", { errorMessage: message });
     logger.error("Job processing failed", { jobId, error: message });
   }

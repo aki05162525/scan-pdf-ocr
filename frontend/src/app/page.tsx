@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import ImageUploader from "@/components/ImageUploader";
+import { useState } from "react";
 import ImagePreviewList from "@/components/ImagePreviewList";
+import ImageUploader from "@/components/ImageUploader";
 import LanguageSelect from "@/components/LanguageSelect";
 import { createJob } from "@/lib/api";
 
@@ -45,16 +45,20 @@ export default function Home() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold">Scan to Searchable PDF</h1>
-          <a
-            href="/history"
-            className="text-sm text-blue-600 hover:underline"
-          >
+          <a href="/history" className="text-sm text-blue-600 hover:underline">
             履歴一覧
           </a>
         </div>
 
-        <ImageUploader onFilesAdded={handleFilesAdded} currentCount={files.length} />
-        <ImagePreviewList files={files} onReorder={handleReorder} onRemove={handleRemove} />
+        <ImageUploader
+          onFilesAdded={handleFilesAdded}
+          currentCount={files.length}
+        />
+        <ImagePreviewList
+          files={files}
+          onReorder={handleReorder}
+          onRemove={handleRemove}
+        />
 
         {files.length > 0 && (
           <div className="mt-6 flex items-end gap-4">

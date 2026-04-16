@@ -1,6 +1,6 @@
+import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { serve } from "@hono/node-server";
 import jobsRoute from "./routes/jobs.js";
 import { logger } from "./utils/logger.js";
 
@@ -12,7 +12,7 @@ app.use(
   cors({
     origin: "http://localhost:3000",
     allowMethods: ["GET", "POST", "DELETE"],
-  })
+  }),
 );
 
 // Routes
