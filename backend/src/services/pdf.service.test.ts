@@ -5,11 +5,14 @@ import { join } from "node:path";
 import { generatePdf } from "./pdf.service.js";
 import { getPagesDir, getOriginalPdfPath, getJobDir } from "../utils/storage.js";
 
-function getPdfPageCount(pdfPath: string): number {
+function getPdfInfo(pdfPath: string): { pages: number; pageSize: string } {
   const output = execFileSync("pdfinfo", [pdfPath]).toString();
-  const match = output.match(/Pages:\s+(\d+)/);
-  if (!match) throw new Error("Could not determine page count");
-  return parseInt(match[1], 10);
+  const pagesMatch = output.match(/Pages:\s+(\d+)/);
+  const sizeMatch = output.match(/Page size:\s+(.+)/);
+  return {
+    pages: pagesMatch ? parseInt(pagesMatch[1], 10) : 0,
+    pageSize: sizeMatch ? sizeMatch[1].trim() : "",
+  };
 }
 
 const TEST_JOB_ID = "test-pdf-gen";
@@ -59,13 +62,62 @@ describe("generatePdf", () => {
     await expect(access(outputPath)).resolves.toBeUndefined();
 
     // Verify page count
-    expect(getPdfPageCount(outputPath)).toBe(3);
+    expect(getPdfInfo(outputPath).pages).toBe(3);
   });
 
   it("throws when no images exist", async () => {
     await expect(generatePdf(TEST_JOB_ID)).rejects.toThrow(
       "No image files found"
     );
+  });
+
+  it("generates PDF with B5 page size (498 x 709 pts)", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    createTestImage(join(pagesDir, "000.jpg"), "B5 test");
+
+    const outputPath = await generatePdf(TEST_JOB_ID);
+    const info = getPdfInfo(outputPath);
+
+    // B5 = 176mm x 250mm = 498.9 x 708.66 pts
+    // pdfinfo rounds, so check approximate values
+    const [width, height] = info.pageSize.split(" x ").map((s) => parseFloat(s));
+    expect(width).toBeCloseTo(498.9, 0);
+    expect(height).toBeCloseTo(708.66, 0);
+  });
+
+  it("handles landscape image on B5 page (centered, aspect ratio maintained)", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    // Create a wide landscape image (800x400)
+    execFileSync("convert", [
+      "-size", "800x400", "xc:white",
+      "-pointsize", "24", "-annotate", "+50+200", "Landscape",
+      join(pagesDir, "000.jpg"),
+    ]);
+
+    const outputPath = await generatePdf(TEST_JOB_ID);
+    const info = getPdfInfo(outputPath);
+
+    // Page should still be B5 portrait, not the image's aspect ratio
+    const [width, height] = info.pageSize.split(" x ").map((s) => parseFloat(s));
+    expect(width).toBeCloseTo(498.9, 0);
+    expect(height).toBeCloseTo(708.66, 0);
+  });
+
+  it("handles portrait image on B5 page (centered, aspect ratio maintained)", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    // Create a tall portrait image (400x800)
+    execFileSync("convert", [
+      "-size", "400x800", "xc:white",
+      "-pointsize", "24", "-annotate", "+50+400", "Portrait",
+      join(pagesDir, "000.jpg"),
+    ]);
+
+    const outputPath = await generatePdf(TEST_JOB_ID);
+    const info = getPdfInfo(outputPath);
+
+    const [width, height] = info.pageSize.split(" x ").map((s) => parseFloat(s));
+    expect(width).toBeCloseTo(498.9, 0);
+    expect(height).toBeCloseTo(708.66, 0);
   });
 
   it("ignores non-image files in pages directory", async () => {
