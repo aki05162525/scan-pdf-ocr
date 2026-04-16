@@ -18,6 +18,9 @@ out/
 # Storage (uploaded files & DB)
 backend/storage/
 
+# Tesseract LSTM models (downloaded via backend/scripts/download-tessdata.sh)
+backend/tessdata/
+
 # OS
 .DS_Store
 Thumbs.db

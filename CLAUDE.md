@@ -13,7 +13,7 @@
 * **frontend**: Next.js 16 (App Router) + Tailwind CSS — `frontend/`
 * **backend**: Hono + Node.js — `backend/`
 * **DB**: SQLite + Drizzle ORM
-* **OCR**: OCRmyPDF + Tesseract (child_process経由)
+* **OCR**: OCRmyPDF + Tesseract (child_process経由)。`backend/tessdata/` があれば `TESSDATA_PREFIX` で参照され、`tessdata_best` の高精度モデルが使われる
 * **PDF生成**: ImageMagick (convert)
 * **テスト**: Vitest, React Testing Library
 
@@ -26,6 +26,7 @@ cd backend && npm test           # テスト実行
 cd backend && npm run test:watch # テストウォッチ
 cd backend && npx drizzle-kit generate  # マイグレーション生成
 cd backend && npx drizzle-kit migrate   # マイグレーション適用
+cd backend && ./scripts/download-tessdata.sh  # tessdata_best (高精度LSTMモデル) をDL
 
 # frontend (port 3000)
 cd frontend && npm run dev       # 開発サーバー

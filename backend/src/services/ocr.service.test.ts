@@ -37,14 +37,16 @@ function isOcrmypdfInstalled(): boolean {
 }
 
 function createTestImage(filepath: string, text: string) {
+  // Sized roughly like a real scan page so the shading-correction blur radius
+  // (sigma 30) does not eat text, and tessdata_best has enough pixels to work with.
   execFileSync("convert", [
     "-size",
-    "400x200",
+    "1200x800",
     "xc:white",
     "-pointsize",
-    "24",
+    "48",
     "-annotate",
-    "+50+100",
+    "+100+400",
     text,
     filepath,
   ]);
@@ -114,6 +116,26 @@ describe("runOcr", () => {
       );
     }
   );
+});
+
+describe("tessdata_best", () => {
+  it("sets TESSDATA_PREFIX env to project tessdata dir when it exists", async () => {
+    const { resolveTessdataPrefix } = await import("./ocr.service.js");
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+
+    // Project tessdata dir is backend/tessdata
+    const projectTessdata = path.resolve(
+      path.dirname(new URL(import.meta.url).pathname),
+      "../../tessdata"
+    );
+
+    if (fs.existsSync(projectTessdata)) {
+      expect(resolveTessdataPrefix()).toBe(projectTessdata);
+    } else {
+      expect(resolveTessdataPrefix()).toBeUndefined();
+    }
+  });
 });
 
 describe("ocrmypdf options", () => {

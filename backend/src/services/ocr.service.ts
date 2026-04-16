@@ -1,10 +1,21 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { existsSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { getOriginalPdfPath, getOcrPdfPath } from "../utils/storage.js";
 import { logger } from "../utils/logger.js";
 import { updateJobStatus } from "./job.service.js";
 
 const execFileAsync = promisify(execFile);
+
+// Returns the project-local tessdata_best directory if it exists, else undefined.
+// When set, ocrmypdf/Tesseract loads higher-accuracy LSTM models from here.
+export function resolveTessdataPrefix(): string | undefined {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const projectTessdata = resolve(here, "../../tessdata");
+  return existsSync(projectTessdata) ? projectTessdata : undefined;
+}
 
 export async function runOcr(jobId: string, language: string): Promise<void> {
   const inputPath = getOriginalPdfPath(jobId);
@@ -12,21 +23,37 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
 
   updateJobStatus(jobId, "ocr_running");
 
+  const tessdataPrefix = resolveTessdataPrefix();
+  const env = tessdataPrefix
+    ? { ...process.env, TESSDATA_PREFIX: tessdataPrefix }
+    : process.env;
+
   try {
-    await execFileAsync("ocrmypdf", [
-      "-l",
-      language,
-      "--deskew",
-      "--rotate-pages",
-      "--force-ocr",
-      "--clean",
-      "--image-dpi",
-      "300",
-      "--optimize",
-      "1",
-      inputPath,
-      outputPath,
-    ]);
+    await execFileAsync(
+      "ocrmypdf",
+      [
+        "-l",
+        language,
+        "--deskew",
+        "--rotate-pages",
+        "--force-ocr",
+        "--clean",
+        "--image-dpi",
+        "300",
+        "--optimize",
+        "1",
+        // LSTM-only engine (skip the legacy engine; modern Tesseract LSTM is
+        // strictly better for Japanese)
+        "--tesseract-oem",
+        "1",
+        // Auto page segmentation with orientation/script detection
+        "--tesseract-pagesegmode",
+        "1",
+        inputPath,
+        outputPath,
+      ],
+      { env }
+    );
 
     updateJobStatus(jobId, "completed", { ocrPdfPath: outputPath });
     logger.info("OCR completed", { jobId });
