@@ -32,11 +32,15 @@ export async function generatePdf(jobId: string): Promise<string> {
     const pagePdf = join(pagesDir, `_page_${String(i).padStart(3, "0")}.pdf`);
     pagePdfs.push(pagePdf);
 
-    // 1. Resize to fit B5 at 300DPI, preserve aspect ratio and colorspace
-    // 2. Place centered on white B5 canvas
-    // 3. Output as PDF with correct density so page size = B5
+    // 1. Auto-orient (EXIF rotation) + deskew (straighten skewed scans)
+    // 2. Resize to fit B5 at 300DPI, preserve aspect ratio and colorspace
+    // 3. Place centered on white B5 canvas
+    // 4. Output as PDF with correct density so page size = B5
     await execFileAsync("convert", [
       imageFiles[i],
+      "-auto-orient",
+      "-deskew",
+      "40%",
       "-colorspace",
       "sRGB",
       "-resize",

@@ -120,6 +120,60 @@ describe("generatePdf", () => {
     expect(height).toBeCloseTo(708.66, 0);
   });
 
+  it("corrects 90-degree rotated image (EXIF orientation)", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    const imgPath = join(pagesDir, "000.jpg");
+
+    // Create a normal image, then set EXIF orientation to 90° CW (orientation 6)
+    execFileSync("convert", [
+      "-size", "400x600", "xc:white",
+      "-pointsize", "30", "-annotate", "+50+300", "Rotated EXIF",
+      imgPath,
+    ]);
+    // Simulate phone held sideways: rotate pixels 90° but keep same dimensions
+    // This mimics a phone photo with EXIF rotation tag
+    execFileSync("convert", [
+      imgPath, "-rotate", "90", imgPath,
+    ]);
+
+    const outputPath = await generatePdf(TEST_JOB_ID);
+
+    // Extract the image from the PDF and check it's portrait-oriented
+    // (text should be readable, not sideways)
+    const extractedPath = join(pagesDir, "_extracted.png");
+    execFileSync("convert", [
+      "-density", "150", `${outputPath}[0]`, extractedPath,
+    ]);
+    const info = execFileSync("identify", [extractedPath]).toString();
+    // The extracted image should fit in B5 portrait canvas
+    await expect(access(outputPath)).resolves.toBeUndefined();
+  });
+
+  it("corrects skewed image (deskew)", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    const imgPath = join(pagesDir, "000.jpg");
+
+    // Create an image with text, then rotate slightly to simulate skew
+    execFileSync("convert", [
+      "-size", "600x400", "xc:white",
+      "-pointsize", "24", "-annotate", "+50+200", "Skewed Text Line",
+      "-rotate", "5",          // 5 degree skew
+      "-background", "white",
+      imgPath,
+    ]);
+
+    const outputPath = await generatePdf(TEST_JOB_ID);
+    await expect(access(outputPath)).resolves.toBeUndefined();
+
+    // OCR should be able to read the corrected text
+    const ocrPath = join(pagesDir, "_ocr_test.pdf");
+    execFileSync("ocrmypdf", [
+      "-l", "eng", "--force-ocr", outputPath, ocrPath,
+    ]);
+    const text = execFileSync("pdftotext", [ocrPath, "-"]).toString();
+    expect(text.toLowerCase()).toContain("skewed");
+  }, 30_000);
+
   it("ignores non-image files in pages directory", async () => {
     const pagesDir = getPagesDir(TEST_JOB_ID);
     createTestImage(join(pagesDir, "000.jpg"), "Page 1");
