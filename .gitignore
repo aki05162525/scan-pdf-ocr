@@ -15,8 +15,8 @@ out/
 *.db
 *.db-journal
 
-# Storage (uploaded files)
-backend/storage/jobs/
+# Storage (uploaded files & DB)
+backend/storage/
 
 # OS
 .DS_Store
