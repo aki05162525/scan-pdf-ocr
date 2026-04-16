@@ -19,6 +19,11 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
       "--deskew",
       "--rotate-pages",
       "--force-ocr",
+      "--clean",
+      "--image-dpi",
+      "300",
+      "--optimize",
+      "1",
       inputPath,
       outputPath,
     ]);

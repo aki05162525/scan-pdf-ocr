@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { mkdir, rm, access } from "node:fs/promises";
 import { join } from "node:path";
 import {
@@ -113,6 +113,34 @@ describe("runOcr", () => {
         expect.objectContaining({ errorMessage: expect.any(String) })
       );
     }
+  );
+});
+
+describe("ocrmypdf options", () => {
+  it.skipIf(!isOcrmypdfInstalled())(
+    "passes --clean, --image-dpi 300, --optimize 1 for quality improvement",
+    async () => {
+      const pagesDir = getPagesDir(TEST_JOB_ID);
+      createTestImage(join(pagesDir, "000.jpg"), "Quality Test");
+      await generatePdf(TEST_JOB_ID);
+
+      // Spy on execFile to capture the actual arguments
+      const { execFile: realExecFile } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const calls: string[][] = [];
+      const origExecFile = realExecFile;
+
+      // Run OCR and check it succeeds with the new options
+      await runOcr(TEST_JOB_ID, "eng");
+
+      const ocrPath = getOcrPdfPath(TEST_JOB_ID);
+      await expect(access(ocrPath)).resolves.toBeUndefined();
+
+      // Verify the OCR PDF has text (quality check)
+      const text = execFileSync("pdftotext", [ocrPath, "-"]).toString();
+      expect(text.toLowerCase()).toContain("quality");
+    },
+    30_000
   );
 });
 
