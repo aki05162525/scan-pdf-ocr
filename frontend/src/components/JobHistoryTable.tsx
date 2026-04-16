@@ -110,6 +110,7 @@ export default function JobHistoryTable() {
                         </a>
                       )}
                       <button
+                        type="button"
                         onClick={(e) => handleDelete(e, job.id)}
                         className="text-red-600 hover:underline"
                       >
@@ -127,6 +128,7 @@ export default function JobHistoryTable() {
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
           <button
+            type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
             className="px-3 py-1 border rounded disabled:opacity-50"
@@ -137,6 +139,7 @@ export default function JobHistoryTable() {
             {page} / {totalPages}
           </span>
           <button
+            type="button"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
             className="px-3 py-1 border rounded disabled:opacity-50"

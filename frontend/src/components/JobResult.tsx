@@ -47,12 +47,14 @@ export default function JobResult({ job }: Props) {
         </a>
       )}
       <button
+        type="button"
         onClick={() => router.push("/")}
         className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium"
       >
         新規作成
       </button>
       <button
+        type="button"
         onClick={handleDelete}
         disabled={deleting}
         className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium disabled:opacity-50"

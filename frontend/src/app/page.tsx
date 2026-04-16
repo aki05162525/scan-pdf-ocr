@@ -64,6 +64,7 @@ export default function Home() {
           <div className="mt-6 flex items-end gap-4">
             <LanguageSelect value={language} onChange={setLanguage} />
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={submitting}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium disabled:opacity-50"

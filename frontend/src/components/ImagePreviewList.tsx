@@ -73,6 +73,7 @@ export default function ImagePreviewList({
               {index + 1}
             </div>
             <button
+              type="button"
               onClick={() => onRemove(index)}
               className="absolute top-1 right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-600"
             >
