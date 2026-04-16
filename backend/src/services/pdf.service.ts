@@ -32,13 +32,28 @@ export async function generatePdf(jobId: string): Promise<string> {
     const pagePdf = join(pagesDir, `_page_${String(i).padStart(3, "0")}.pdf`);
     pagePdfs.push(pagePdf);
 
-    // 1. Auto-orient (EXIF rotation) + deskew (straighten skewed scans)
-    // 2. Resize to fit B5 at 300DPI, preserve aspect ratio and colorspace
-    // 3. Place centered on white B5 canvas
-    // 4. Output as PDF with correct density so page size = B5
+    // 1. Auto-orient (EXIF rotation)
+    // 2. Shading correction: divide image by a heavily-blurred copy to flatten
+    //    uneven illumination from scanners/phone cameras, then normalize contrast
+    // 3. Deskew (straighten skewed scans)
+    // 4. Resize to fit B5 at 300DPI, preserve aspect ratio and colorspace
+    // 5. Place centered on white B5 canvas
+    // 6. Output as PDF with correct density so page size = B5
     await execFileAsync("convert", [
       imageFiles[i],
       "-auto-orient",
+      "(",
+      "+clone",
+      "-blur",
+      "0x30",
+      ")",
+      "-compose",
+      "Divide_Src",
+      "-composite",
+      // Reset compose so subsequent ops (e.g. -extent) don't divide-blend
+      "-compose",
+      "Over",
+      "-normalize",
       "-deskew",
       "40%",
       "-colorspace",

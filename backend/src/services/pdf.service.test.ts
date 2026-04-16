@@ -174,6 +174,35 @@ describe("generatePdf", () => {
     expect(text.toLowerCase()).toContain("skewed");
   }, 30_000);
 
+  it("flattens shaded background so OCR can read text on uneven illumination", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    const imgPath = join(pagesDir, "000.jpg");
+
+    // Simulate scanner shading: strong dark-to-light gradient background
+    // with black text that becomes hard to read in the dark region.
+    execFileSync("convert", [
+      "-size", "1200x800",
+      "gradient:gray35-white",
+      "-fill", "black",
+      "-pointsize", "48",
+      "-annotate", "+80+200", "Shading correction",
+      "-annotate", "+80+400", "should still be readable",
+      "-annotate", "+80+600", "across the gradient",
+      imgPath,
+    ]);
+
+    const outputPath = await generatePdf(TEST_JOB_ID);
+
+    const ocrPath = join(pagesDir, "_ocr_test.pdf");
+    execFileSync("ocrmypdf", [
+      "-l", "eng", "--force-ocr", outputPath, ocrPath,
+    ]);
+    const text = execFileSync("pdftotext", [ocrPath, "-"]).toString().toLowerCase();
+    // Text in the dark (shaded) region should still be picked up
+    expect(text).toContain("shading");
+    expect(text).toContain("readable");
+  }, 30_000);
+
   it("ignores non-image files in pages directory", async () => {
     const pagesDir = getPagesDir(TEST_JOB_ID);
     createTestImage(join(pagesDir, "000.jpg"), "Page 1");
