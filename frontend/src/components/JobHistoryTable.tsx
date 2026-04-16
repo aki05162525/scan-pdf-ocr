@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Job } from "@/lib/api";
 import { deleteJob, getOcrPdfUrl, listJobs } from "@/lib/api";
 
@@ -21,7 +21,7 @@ export default function JobHistoryTable() {
   const [loading, setLoading] = useState(true);
   const limit = 20;
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const data = await listJobs(page, limit);
@@ -32,7 +32,7 @@ export default function JobHistoryTable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
 
   useEffect(() => {
     fetchJobs();

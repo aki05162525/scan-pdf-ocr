@@ -72,7 +72,8 @@ export async function createJob(input: CreateJobInput) {
     db.insert(jobPages).values(page).run();
   }
 
-  const job = db.select().from(jobs).where(eq(jobs.id, jobId)).get()!;
+  const job = db.select().from(jobs).where(eq(jobs.id, jobId)).get();
+  if (!job) throw new Error(`Failed to load created job: ${jobId}`);
   return toJobResponse(job);
 }
 

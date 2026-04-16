@@ -141,13 +141,6 @@ describe("ocrmypdf options", () => {
       createTestImage(join(pagesDir, "000.jpg"), "Quality Test");
       await generatePdf(TEST_JOB_ID);
 
-      // Spy on execFile to capture the actual arguments
-      const { execFile: realExecFile } = await import("node:child_process");
-      const { promisify } = await import("node:util");
-      const _calls: string[][] = [];
-      const _origExecFile = realExecFile;
-
-      // Run OCR and check it succeeds with the new options
       await runOcr(TEST_JOB_ID, "eng");
 
       const ocrPath = getOcrPdfPath(TEST_JOB_ID);

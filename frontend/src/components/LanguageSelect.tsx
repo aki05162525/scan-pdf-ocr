@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 interface Props {
   value: string;
   onChange: (value: string) => void;
@@ -11,12 +13,17 @@ const LANGUAGES = [
 ];
 
 export default function LanguageSelect({ value, onChange }: Props) {
+  const selectId = useId();
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label
+        htmlFor={selectId}
+        className="block text-sm font-medium text-gray-700 mb-1"
+      >
         OCR言語
       </label>
       <select
+        id={selectId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
