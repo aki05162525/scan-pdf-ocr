@@ -1,14 +1,11 @@
-import { execFile } from "node:child_process";
-import { readdir, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { promisify } from "node:util";
+import { rm } from "node:fs/promises";
 import { logger } from "../utils/logger.js";
 import {
   getOcrPdfPath,
   getOriginalPdfPath,
-  getPagesDir,
 } from "../utils/storage.js";
 import { updateJobStatus } from "./job.service.js";
+import { generatePdf, listPreparedImages } from "./pdf.service.js";
 import {
   buildSearchablePdf,
   type PageOcrResult,
@@ -16,49 +13,21 @@ import {
 } from "./searchable-pdf.service.js";
 import { extractTextFromImage } from "./vision-ocr.service.js";
 
-const execFileAsync = promisify(execFile);
-
-const PDFTOPPM_DPI = 300;
-const EXTRACT_PREFIX = "_ocr_extract";
-
-function getExtractedPageNumber(filename: string): number {
-  const match = filename.match(new RegExp(`^${EXTRACT_PREFIX}-(\\d+)\\.png$`));
-  return match ? Number.parseInt(match[1], 10) : Number.POSITIVE_INFINITY;
-}
-
-function sortExtractedPages(files: string[]): string[] {
-  return [...files].sort((a, b) => {
-    const pageDiff = getExtractedPageNumber(a) - getExtractedPageNumber(b);
-    return pageDiff || a.localeCompare(b);
-  });
-}
-
 export async function runOcr(jobId: string, language: string): Promise<void> {
   const inputPath = getOriginalPdfPath(jobId);
   const outputPath = getOcrPdfPath(jobId);
-  const pagesDir = getPagesDir(jobId);
-  let extractedPages: string[] = [];
+  let preparedImages: string[] = [];
 
   updateJobStatus(jobId, "ocr_running");
 
   try {
-    await execFileAsync("pdftoppm", [
-      "-png",
-      "-r",
-      String(PDFTOPPM_DPI),
-      inputPath,
-      join(pagesDir, EXTRACT_PREFIX),
-    ]);
-
-    extractedPages = sortExtractedPages(
-      (await readdir(pagesDir)).filter(
-        (f) => f.startsWith(`${EXTRACT_PREFIX}-`) && f.endsWith(".png"),
-      ),
-    );
+    preparedImages = await listPreparedImages(jobId);
+    if (preparedImages.length === 0) {
+      throw new Error("No prepared OCR images found");
+    }
 
     const pageOcrResults: PageOcrResult[] = [];
-    for (const file of extractedPages) {
-      const imagePath = join(pagesDir, file);
+    for (const imagePath of preparedImages) {
       const result = await extractTextFromImage(imagePath, language);
       pageOcrResults.push(result);
     }
@@ -73,7 +42,7 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
     updateJobStatus(jobId, "completed", { ocrPdfPath: outputPath });
     logger.info("OCR completed", {
       jobId,
-      pages: extractedPages.length,
+      pages: preparedImages.length,
     });
   } catch (error) {
     const message =
@@ -83,8 +52,8 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
     throw error;
   } finally {
     await Promise.all(
-      extractedPages.map((file) =>
-        rm(join(pagesDir, file), { force: true }).catch(() => undefined),
+      preparedImages.map((imagePath) =>
+        rm(imagePath, { force: true }).catch(() => undefined),
       ),
     );
   }
@@ -95,7 +64,6 @@ export async function processJob(
   language: string,
 ): Promise<void> {
   try {
-    const { generatePdf } = await import("./pdf.service.js");
     const originalPdfPath = await generatePdf(jobId);
     updateJobStatus(jobId, "pdf_generated", { originalPdfPath });
 

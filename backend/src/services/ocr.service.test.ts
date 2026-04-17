@@ -144,16 +144,16 @@ describe("runOcr", () => {
     await runOcr(TEST_JOB_ID, "eng");
 
     expect(seenFiles).toEqual([
-      "_ocr_extract-1.png",
-      "_ocr_extract-2.png",
-      "_ocr_extract-3.png",
-      "_ocr_extract-4.png",
-      "_ocr_extract-5.png",
-      "_ocr_extract-6.png",
-      "_ocr_extract-7.png",
-      "_ocr_extract-8.png",
-      "_ocr_extract-9.png",
-      "_ocr_extract-10.png",
+      "_ocr_ready_000.png",
+      "_ocr_ready_001.png",
+      "_ocr_ready_002.png",
+      "_ocr_ready_003.png",
+      "_ocr_ready_004.png",
+      "_ocr_ready_005.png",
+      "_ocr_ready_006.png",
+      "_ocr_ready_007.png",
+      "_ocr_ready_008.png",
+      "_ocr_ready_009.png",
     ]);
   }, 60_000);
 
@@ -173,7 +173,7 @@ describe("runOcr", () => {
       await runOcr(TEST_JOB_ID, "eng");
 
       const files = await readdir(pagesDir);
-      const leftover = files.filter((f) => f.startsWith("_ocr_extract"));
+      const leftover = files.filter((f) => f.startsWith("_ocr_ready_"));
       expect(leftover).toEqual([]);
     },
     30_000,
@@ -189,9 +189,15 @@ describe("runOcr", () => {
     await expect(runOcr(TEST_JOB_ID, "eng")).rejects.toThrow("vision failed");
 
     const files = await readdir(pagesDir);
-    const leftover = files.filter((f) => f.startsWith("_ocr_extract"));
+    const leftover = files.filter((f) => f.startsWith("_ocr_ready_"));
     expect(leftover).toEqual([]);
   }, 30_000);
+
+  it("fails when prepared OCR images are missing", async () => {
+    await expect(runOcr(TEST_JOB_ID, "eng")).rejects.toThrow(
+      "No prepared OCR images found",
+    );
+  });
 });
 
 describe("processJob", () => {
