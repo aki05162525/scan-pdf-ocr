@@ -7,7 +7,7 @@ import {
   getOriginalPdfPath,
   getPagesDir,
 } from "../utils/storage.js";
-import { generatePdf } from "./pdf.service.js";
+import { generatePdf, listPreparedImages } from "./pdf.service.js";
 
 function getPdfInfo(pdfPath: string): { pages: number; pageSize: string } {
   const output = execFileSync("pdfinfo", [pdfPath]).toString();
@@ -53,6 +53,19 @@ describe("generatePdf", () => {
 
     expect(outputPath).toBe(getOriginalPdfPath(TEST_JOB_ID));
     await expect(access(outputPath)).resolves.toBeUndefined();
+  });
+
+  it("writes OCR-ready images alongside the generated PDF", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    createTestImage(join(pagesDir, "000.jpg"), "Page 1");
+    createTestImage(join(pagesDir, "001.jpg"), "Page 2");
+
+    await generatePdf(TEST_JOB_ID);
+
+    await expect(listPreparedImages(TEST_JOB_ID)).resolves.toEqual([
+      join(pagesDir, "_ocr_ready_000.png"),
+      join(pagesDir, "_ocr_ready_001.png"),
+    ]);
   });
 
   it("combines multiple images into a PDF in sorted order", async () => {
