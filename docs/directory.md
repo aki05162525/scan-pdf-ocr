@@ -34,9 +34,11 @@ scan-pdf-ocr/
 │   │   ├── routes/
 │   │   │   └── jobs.ts               # /api/jobs ルーティング
 │   │   ├── services/
-│   │   │   ├── job.service.ts        # ジョブCRUDロジック
-│   │   │   ├── pdf.service.ts        # 画像→PDF結合
-│   │   │   └── ocr.service.ts        # ocrmypdf呼び出し (child_process)
+│   │   │   ├── job.service.ts            # ジョブCRUDロジック
+│   │   │   ├── pdf.service.ts            # 画像→PDF結合 (ImageMagick)
+│   │   │   ├── ocr.service.ts            # OCRパイプラインのオーケストレーション
+│   │   │   ├── vision-ocr.service.ts     # Google Cloud Vision API ラッパー
+│   │   │   └── searchable-pdf.service.ts # pdf-lib で透明テキスト層合成
 │   │   ├── db/
 │   │   │   ├── schema.ts            # Drizzle スキーマ定義
 │   │   │   ├── index.ts             # DB接続 (SQLite)
@@ -54,6 +56,10 @@ scan-pdf-ocr/
 │   │           │   └── 001.png
 │   │           ├── original.pdf     # 結合PDF
 │   │           └── ocr.pdf          # OCR済PDF
+│   ├── fonts/                        # pdf-lib 埋め込み用CJKフォント (.gitignore対象)
+│   │   └── NotoSansCJKjp-Regular.otf
+│   ├── scripts/
+│   │   └── download-font.sh          # Noto Sans CJK JP を取得
 │   ├── drizzle.config.ts
 │   ├── package.json
 │   └── tsconfig.json

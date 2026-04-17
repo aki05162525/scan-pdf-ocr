@@ -5,22 +5,36 @@
 ## 必要なもの
 
 - Node.js 20+
-- OCR関連ツール（Ubuntu/Debian）
+- Google Cloud Platform アカウント（Vision API を使用）
+- 画像処理ツール（Ubuntu/Debian）
 
 ```bash
-sudo apt-get install -y ocrmypdf tesseract-ocr tesseract-ocr-jpn imagemagick ghostscript poppler-utils
+sudo apt-get install -y imagemagick ghostscript poppler-utils
 ```
 
 ## セットアップ
 
+### 1. GCP Vision API の認証情報を取得
+
+1. GCP コンソールで Cloud Vision API を有効化
+2. サービスアカウントを作成し、JSON キーをダウンロード
+3. 安全な場所に配置（例: `~/.config/gcp/vision-key.json`）
+
+### 2. backend
+
 ```bash
-# backend
 cd backend
 npm install
+cp .env.example .env
+# .env を編集して GOOGLE_APPLICATION_CREDENTIALS にキーの絶対パスを指定
+./scripts/download-font.sh   # PDF 透明テキスト層用の日本語フォントを取得
 npx drizzle-kit generate
 npx drizzle-kit migrate
+```
 
-# frontend
+### 3. frontend
+
+```bash
 cd frontend
 npm install
 ```
@@ -59,6 +73,6 @@ cd frontend && npm test
 | frontend | Next.js (App Router), Tailwind CSS |
 | backend | Hono, Node.js |
 | DB | SQLite, Drizzle ORM |
-| OCR | OCRmyPDF, Tesseract |
-| PDF生成 | ImageMagick |
+| OCR | Google Cloud Vision API |
+| PDF生成 | ImageMagick + pdf-lib（透明テキスト層） |
 | テスト | Vitest, React Testing Library |

@@ -13,8 +13,9 @@
 * **frontend**: Next.js 16 (App Router) + Tailwind CSS — `frontend/`
 * **backend**: Hono + Node.js — `backend/`
 * **DB**: SQLite + Drizzle ORM
-* **OCR**: OCRmyPDF + Tesseract (child_process経由)。`backend/tessdata/` があれば `TESSDATA_PREFIX` で参照され、`tessdata_best` の高精度モデルが使われる
-* **PDF生成**: ImageMagick (convert)
+* **OCR**: Google Cloud Vision API (`@google-cloud/vision`)。認証は `GOOGLE_APPLICATION_CREDENTIALS` 環境変数で JSON キーのパスを指定する
+* **PDF生成**: ImageMagick (convert) で画像PDF生成 → `pdftoppm` で各ページ抽出 → Vision API でOCR → `pdf-lib` + `@pdf-lib/fontkit` で透明テキスト層を合成
+* **フォント**: `backend/fonts/NotoSansCJKjp-Regular.otf` （`./scripts/download-font.sh` で取得、透明テキスト層用）
 * **テスト**: Vitest, React Testing Library
 
 # COMMANDS
@@ -26,7 +27,7 @@ cd backend && npm test           # テスト実行
 cd backend && npm run test:watch # テストウォッチ
 cd backend && npx drizzle-kit generate  # マイグレーション生成
 cd backend && npx drizzle-kit migrate   # マイグレーション適用
-cd backend && ./scripts/download-tessdata.sh  # tessdata_best (高精度LSTMモデル) をDL
+cd backend && ./scripts/download-font.sh  # 透明テキスト層用のCJKフォントをDL
 
 # frontend (port 3000)
 cd frontend && npm run dev       # 開発サーバー
