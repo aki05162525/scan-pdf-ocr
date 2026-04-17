@@ -215,7 +215,9 @@ Content-Disposition: attachment; filename="scan_2026-04-17_original.pdf"
    → status: pdf_generated
 
 3. OCR実行 (ocr.service.ts)
-   → child_process.exec("ocrmypdf --language jpn ...")
+   → pdftoppm で original.pdf の各ページをPNG抽出
+   → Vision API (documentTextDetection) でテキスト+bbox取得
+   → pdf-lib で original.pdf に透明テキスト層を追加 → ocr.pdf
    → status: ocr_running → completed (or failed)
 
 4. フロントは GET /api/jobs/:id を 2秒間隔でポーリング
