@@ -11,6 +11,11 @@ out/
 .env.local
 .env.*.local
 
+# GCP service account keys (extra safeguard — never commit)
+*-service-account*.json
+gcp-*.json
+**/gcp-key*.json
+
 # Database
 *.db
 *.db-journal
@@ -18,8 +23,9 @@ out/
 # Storage (uploaded files & DB)
 backend/storage/
 
-# Tesseract LSTM models (downloaded via backend/scripts/download-tessdata.sh)
-backend/tessdata/
+# Fonts downloaded via backend/scripts/download-font.sh (CJK font for pdf-lib
+# invisible text layer in OCR'd PDFs)
+backend/fonts/
 
 # OS
 .DS_Store

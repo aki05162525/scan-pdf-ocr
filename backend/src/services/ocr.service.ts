@@ -1,62 +1,71 @@
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readdir, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { promisify } from "node:util";
 import { logger } from "../utils/logger.js";
-import { getOcrPdfPath, getOriginalPdfPath } from "../utils/storage.js";
+import {
+  getOcrPdfPath,
+  getOriginalPdfPath,
+  getPagesDir,
+} from "../utils/storage.js";
 import { updateJobStatus } from "./job.service.js";
+import {
+  buildSearchablePdf,
+  type PageOcrResult,
+  resolveFontPath,
+} from "./searchable-pdf.service.js";
+import { extractTextFromImage } from "./vision-ocr.service.js";
 
 const execFileAsync = promisify(execFile);
 
-// Returns the project-local tessdata_best directory if it exists, else undefined.
-// When set, ocrmypdf/Tesseract loads higher-accuracy LSTM models from here.
-export function resolveTessdataPrefix(): string | undefined {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const projectTessdata = resolve(here, "../../tessdata");
-  return existsSync(projectTessdata) ? projectTessdata : undefined;
-}
+const PDFTOPPM_DPI = 300;
+const EXTRACT_PREFIX = "_ocr_extract";
 
 export async function runOcr(jobId: string, language: string): Promise<void> {
   const inputPath = getOriginalPdfPath(jobId);
   const outputPath = getOcrPdfPath(jobId);
+  const pagesDir = getPagesDir(jobId);
 
   updateJobStatus(jobId, "ocr_running");
 
-  const tessdataPrefix = resolveTessdataPrefix();
-  const env = tessdataPrefix
-    ? { ...process.env, TESSDATA_PREFIX: tessdataPrefix }
-    : process.env;
-
   try {
-    await execFileAsync(
-      "ocrmypdf",
-      [
-        "-l",
-        language,
-        "--deskew",
-        "--rotate-pages",
-        "--force-ocr",
-        "--clean",
-        "--image-dpi",
-        "300",
-        "--optimize",
-        "1",
-        // LSTM-only engine (skip the legacy engine; modern Tesseract LSTM is
-        // strictly better for Japanese)
-        "--tesseract-oem",
-        "1",
-        // Auto page segmentation with orientation/script detection
-        "--tesseract-pagesegmode",
-        "1",
-        inputPath,
-        outputPath,
-      ],
-      { env },
+    await execFileAsync("pdftoppm", [
+      "-png",
+      "-r",
+      String(PDFTOPPM_DPI),
+      inputPath,
+      join(pagesDir, EXTRACT_PREFIX),
+    ]);
+
+    const extractedPages = (await readdir(pagesDir))
+      .filter((f) => f.startsWith(`${EXTRACT_PREFIX}-`) && f.endsWith(".png"))
+      .sort();
+
+    const pageOcrResults: PageOcrResult[] = [];
+    for (const file of extractedPages) {
+      const imagePath = join(pagesDir, file);
+      const result = await extractTextFromImage(imagePath, language);
+      pageOcrResults.push(result);
+    }
+
+    await buildSearchablePdf({
+      sourcePdfPath: inputPath,
+      outputPath,
+      pageOcrResults,
+      fontPath: resolveFontPath(),
+    });
+
+    await Promise.all(
+      extractedPages.map((file) =>
+        rm(join(pagesDir, file), { force: true }).catch(() => undefined),
+      ),
     );
 
     updateJobStatus(jobId, "completed", { ocrPdfPath: outputPath });
-    logger.info("OCR completed", { jobId });
+    logger.info("OCR completed", {
+      jobId,
+      pages: extractedPages.length,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown OCR error";
@@ -71,12 +80,10 @@ export async function processJob(
   language: string,
 ): Promise<void> {
   try {
-    // Step 1: Generate PDF from images
     const { generatePdf } = await import("./pdf.service.js");
     const originalPdfPath = await generatePdf(jobId);
     updateJobStatus(jobId, "pdf_generated", { originalPdfPath });
 
-    // Step 2: Run OCR
     await runOcr(jobId, language);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
