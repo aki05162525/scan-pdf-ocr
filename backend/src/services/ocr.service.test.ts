@@ -1,13 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { access, mkdir, rm } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { access, mkdir, readdir, rm } from "node:fs/promises";
+import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getJobDir, getOcrPdfPath, getPagesDir } from "../utils/storage.js";
+import { resolveFontPath } from "./searchable-pdf.service.js";
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const FONT_PATH = resolve(HERE, "../../fonts/NotoSansCJKjp-Regular.otf");
+const FONT_PATH = resolveFontPath();
 const hasFont = existsSync(FONT_PATH);
 
 // Mock updateJobStatus so we don't need a real DB
@@ -129,6 +128,35 @@ describe("runOcr", () => {
     );
   });
 
+  it("processes extracted PNGs in numeric page order", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    for (let i = 0; i < 10; i++) {
+      createTestImage(join(pagesDir, `${i.toString().padStart(3, "0")}.jpg`), `${i + 1}`);
+    }
+    await generatePdf(TEST_JOB_ID);
+
+    const seenFiles: string[] = [];
+    mockExtractTextFromImage.mockImplementation(async (imagePath: string) => {
+      seenFiles.push(basename(imagePath));
+      return { words: [], imageWidth: 2079, imageHeight: 2953 };
+    });
+
+    await runOcr(TEST_JOB_ID, "eng");
+
+    expect(seenFiles).toEqual([
+      "_ocr_extract-1.png",
+      "_ocr_extract-2.png",
+      "_ocr_extract-3.png",
+      "_ocr_extract-4.png",
+      "_ocr_extract-5.png",
+      "_ocr_extract-6.png",
+      "_ocr_extract-7.png",
+      "_ocr_extract-8.png",
+      "_ocr_extract-9.png",
+      "_ocr_extract-10.png",
+    ]);
+  }, 60_000);
+
   it.skipIf(!hasFont)(
     "cleans up intermediate extracted PNGs after OCR",
     async () => {
@@ -144,13 +172,26 @@ describe("runOcr", () => {
 
       await runOcr(TEST_JOB_ID, "eng");
 
-      const { readdir } = await import("node:fs/promises");
       const files = await readdir(pagesDir);
       const leftover = files.filter((f) => f.startsWith("_ocr_extract"));
       expect(leftover).toEqual([]);
     },
     30_000,
   );
+
+  it("cleans up intermediate extracted PNGs when OCR fails", async () => {
+    const pagesDir = getPagesDir(TEST_JOB_ID);
+    createTestImage(join(pagesDir, "000.jpg"), "Cleanup on failure");
+    await generatePdf(TEST_JOB_ID);
+
+    mockExtractTextFromImage.mockRejectedValue(new Error("vision failed"));
+
+    await expect(runOcr(TEST_JOB_ID, "eng")).rejects.toThrow("vision failed");
+
+    const files = await readdir(pagesDir);
+    const leftover = files.filter((f) => f.startsWith("_ocr_extract"));
+    expect(leftover).toEqual([]);
+  }, 30_000);
 });
 
 describe("processJob", () => {

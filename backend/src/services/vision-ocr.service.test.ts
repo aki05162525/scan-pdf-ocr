@@ -10,7 +10,7 @@ vi.mock("@google-cloud/vision", () => ({
   },
 }));
 
-const { extractTextFromImage, toBcp47Language } = await import(
+const { extractTextFromImage, toBcp47Language, toBcp47LanguageHints } = await import(
   "./vision-ocr.service.js"
 );
 
@@ -169,6 +169,21 @@ describe("extractTextFromImage", () => {
     );
   });
 
+  it("passes composite language hints in BCP-47 form to Vision API", async () => {
+    mockDocumentTextDetection.mockResolvedValue(
+      makeVisionResponseWithSymbols({ width: 100, height: 100, words: [] }),
+    );
+
+    await extractTextFromImage("/tmp/fake.png", "jpn+eng");
+
+    expect(mockDocumentTextDetection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        image: { source: { filename: "/tmp/fake.png" } },
+        imageContext: { languageHints: ["ja", "en"] },
+      }),
+    );
+  });
+
   it("reads image from local file path", async () => {
     mockDocumentTextDetection.mockResolvedValue(
       makeVisionResponseWithSymbols({ width: 100, height: 100, words: [] }),
@@ -208,6 +223,12 @@ describe("toBcp47Language", () => {
   it("passes through already-BCP-47 codes", () => {
     expect(toBcp47Language("ja")).toBe("ja");
     expect(toBcp47Language("en")).toBe("en");
+  });
+});
+
+describe("toBcp47LanguageHints", () => {
+  it("splits composite OCR languages into BCP-47 hints", () => {
+    expect(toBcp47LanguageHints("jpn+eng")).toEqual(["ja", "en"]);
   });
 });
 

@@ -1,8 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { access, mkdir, rm } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getJobDir, getPagesDir } from "../utils/storage.js";
 import { generatePdf } from "./pdf.service.js";
@@ -11,8 +10,7 @@ import {
   resolveFontPath,
 } from "./searchable-pdf.service.js";
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const FONT_PATH = resolve(HERE, "../../fonts/NotoSansCJKjp-Regular.otf");
+const FONT_PATH = resolveFontPath();
 const hasFont = existsSync(FONT_PATH);
 
 const TEST_JOB_ID = "test-searchable-pdf";

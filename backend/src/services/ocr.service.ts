@@ -21,10 +21,23 @@ const execFileAsync = promisify(execFile);
 const PDFTOPPM_DPI = 300;
 const EXTRACT_PREFIX = "_ocr_extract";
 
+function getExtractedPageNumber(filename: string): number {
+  const match = filename.match(new RegExp(`^${EXTRACT_PREFIX}-(\\d+)\\.png$`));
+  return match ? Number.parseInt(match[1], 10) : Number.POSITIVE_INFINITY;
+}
+
+function sortExtractedPages(files: string[]): string[] {
+  return [...files].sort((a, b) => {
+    const pageDiff = getExtractedPageNumber(a) - getExtractedPageNumber(b);
+    return pageDiff || a.localeCompare(b);
+  });
+}
+
 export async function runOcr(jobId: string, language: string): Promise<void> {
   const inputPath = getOriginalPdfPath(jobId);
   const outputPath = getOcrPdfPath(jobId);
   const pagesDir = getPagesDir(jobId);
+  let extractedPages: string[] = [];
 
   updateJobStatus(jobId, "ocr_running");
 
@@ -37,9 +50,11 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
       join(pagesDir, EXTRACT_PREFIX),
     ]);
 
-    const extractedPages = (await readdir(pagesDir))
-      .filter((f) => f.startsWith(`${EXTRACT_PREFIX}-`) && f.endsWith(".png"))
-      .sort();
+    extractedPages = sortExtractedPages(
+      (await readdir(pagesDir)).filter(
+        (f) => f.startsWith(`${EXTRACT_PREFIX}-`) && f.endsWith(".png"),
+      ),
+    );
 
     const pageOcrResults: PageOcrResult[] = [];
     for (const file of extractedPages) {
@@ -55,12 +70,6 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
       fontPath: resolveFontPath(),
     });
 
-    await Promise.all(
-      extractedPages.map((file) =>
-        rm(join(pagesDir, file), { force: true }).catch(() => undefined),
-      ),
-    );
-
     updateJobStatus(jobId, "completed", { ocrPdfPath: outputPath });
     logger.info("OCR completed", {
       jobId,
@@ -72,6 +81,12 @@ export async function runOcr(jobId: string, language: string): Promise<void> {
     updateJobStatus(jobId, "failed", { errorMessage: message });
     logger.error("OCR failed", { jobId, error: message });
     throw error;
+  } finally {
+    await Promise.all(
+      extractedPages.map((file) =>
+        rm(join(pagesDir, file), { force: true }).catch(() => undefined),
+      ),
+    );
   }
 }
 

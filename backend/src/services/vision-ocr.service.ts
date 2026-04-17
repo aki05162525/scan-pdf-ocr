@@ -23,6 +23,13 @@ export function toBcp47Language(code: string): string {
   return LANGUAGE_MAP[code] ?? code;
 }
 
+export function toBcp47LanguageHints(code: string): string[] {
+  return code
+    .split("+")
+    .map((part) => toBcp47Language(part))
+    .filter((part, index, parts) => part.length > 0 && parts.indexOf(part) === index);
+}
+
 let cachedClient: InstanceType<typeof vision.ImageAnnotatorClient> | null =
   null;
 
@@ -41,7 +48,7 @@ export async function extractTextFromImage(
 
   const [response] = await client.documentTextDetection({
     image: { source: { filename: imagePath } },
-    imageContext: { languageHints: [toBcp47Language(language)] },
+    imageContext: { languageHints: toBcp47LanguageHints(language) },
   });
 
   const annotation = response.fullTextAnnotation;
